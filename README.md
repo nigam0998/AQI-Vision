@@ -103,4 +103,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-**© 2026 AQI Vision Team** | Powered by *Antigravity*
+**© 2026 AQI Vision Team**
