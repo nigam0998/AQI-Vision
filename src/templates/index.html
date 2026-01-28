@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Vision | Advanced Air Quality Analytics</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-section">
+                <h1><i class="fa-solid fa-wind"></i> AQI Vision <span style="font-size: 0.5em; vertical-align: super; opacity: 0.7;">PRO</span></h1>
+                <p>Advanced Air Quality Index Prediction & Analytics Platform</p>
+            </div>
+            <div class="header-status">
+                <div class="status-badge">
+                    <div class="status-dot"></div> System Active
+                </div>
+                <div class="status-badge">
+                    <i class="fa-solid fa-database"></i> {{ total_records }} Records
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="dashboard-grid">
+            <!-- Left Column: Prediction Panel -->
+            <aside class="sidebar">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-calculator fa-lg"></i>
+                        <h2>Live Prediction</h2>
+                    </div>
+
+                    <div class="quick-actions">
+                        <button class="badge-btn" onclick="fillSample('good')">Generic Good</button>
+                        <button class="badge-btn" onclick="fillSample('moderate')">Generic Moderate</button>
+                        <button class="badge-btn" onclick="fillSample('unhealthy')">Generic Bad</button>
+                    </div>
+
+                    <form id="prediction-form">
+                        <div class="input-group">
+                            <label>Carbon Monoxide (CO)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-cloud"></i>
+                                <input type="number" id="co_aqi" class="cyber-input" placeholder="0.0" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Ozone (O3)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-sun"></i>
+                                <input type="number" id="ozone_aqi" class="cyber-input" placeholder="0.0" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Nitrogen Dioxide (NO2)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-smog"></i>
+                                <input type="number" id="no2_aqi" class="cyber-input" placeholder="0.0" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Particulate Matter (PM2.5)</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-lungs"></i>
+                                <input type="number" id="pm25_aqi" class="cyber-input" placeholder="0.0" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="cyber-btn" id="submit-btn">
+                            <div class="btn-content">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Air Quality
+                            </div>
+                        </button>
+                    </form>
+
+                    <!-- Result Display -->
+                    <div id="result-box" class="result-display">
+                        <div class="result-content">
+                            <div class="aqi-circle" id="aqi-circle">--</div>
+                            <h3 id="result-category">Analyzing...</h3>
+                            <p id="result-message">Please wait while the AI processes the data.</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column: Visualization & Stats -->
+            <main class="main-content">
+                <!-- Stats Overview -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ avg_aqi }}</div>
+                        <div class="stat-label">Global Avg AQI</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ min_aqi }}</div>
+                        <div class="stat-label">Best Recorded</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ max_aqi }}</div>
+                        <div class="stat-label">Worst Recorded</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">XGBoost</div>
+                        <div class="stat-label">Model Type</div>
+                    </div>
+                </div>
+
+                <!-- Visualizations -->
+                <div class="viz-grid">
+                    <!-- Map -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-earth-americas fa-lg"></i>
+                            <h2>Global Monitoring Network</h2>
+                        </div>
+                        <div id="map"></div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-chart-pie fa-lg"></i>
+                            <h2>Distribution</h2>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="aqiChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // Init Map
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([20, 0], 2);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        // Map Data
+        const mapData = {{ map_data | safe }};
+        
+        function getColor(aqi) {
+            if (aqi <= 50) return '#00e400';
+            if (aqi <= 100) return '#ffff00';
+            if (aqi <= 150) return '#ff7e00';
+            if (aqi <= 200) return '#ff0000';
+            if (aqi <= 300) return '#8f3f97';
+            return '#7e0023';
+        }
+
+        mapData.forEach(point => {
+            L.circleMarker([point.lat, point.lng], {
+                radius: 4,
+                fillColor: getColor(point.aqi),
+                color: null,
+                weight: 0,
+                opacity: 1,
+                fillOpacity: 0.6
+            }).addTo(map).bindPopup(`
+                <div style="color:#333">
+                    <b>AQI: ${point.aqi}</b><br>
+                    Lat: ${point.lat.toFixed(2)}<br>
+                    Lng: ${point.lng.toFixed(2)}
+                </div>
+            `);
+        });
+
+        // Chart
+        const ctx = document.getElementById('aqiChart').getContext('2d');
+        const chartData = {{ chart_data | safe }};
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Good', 'Moderate', 'Sensitive', 'Unhealthy', 'Very Unhealthy', 'Hazardous'],
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#8f3f97', '#7e0023'],
+                    borderColor: '#1e293b',
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#94a3b8', boxWidth: 10, padding: 20 }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // Interactive Form
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.querySelector('#submit-btn .btn-content');
+            const originalText = btn.innerHTML;
+            
+            // Loading State
+            btn.innerHTML = '<div class="loader"></div> Processing...';
+            document.getElementById('submit-btn').disabled = true;
+
+            const formData = {
+                co_aqi: parseFloat(document.getElementById('co_aqi').value),
+                ozone_aqi: parseFloat(document.getElementById('ozone_aqi').value),
+                no2_aqi: parseFloat(document.getElementById('no2_aqi').value),
+                pm25_aqi: parseFloat(document.getElementById('pm25_aqi').value)
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const result = await response.json();
+
+                // UI Update
+                const box = document.getElementById('result-box');
+                const circle = document.getElementById('aqi-circle');
+                
+                box.style.display = 'block';
+                circle.style.backgroundColor = result.color;
+                circle.textContent = Math.round(result.predicted_aqi);
+                
+                // Text color adjustment for circle
+                circle.style.color = (result.predicted_aqi > 50 && result.predicted_aqi < 150) ? '#000' : '#fff';
+
+                document.getElementById('result-category').textContent = result.category;
+                document.getElementById('result-category').style.color = result.color;
+                document.getElementById('result-message').textContent = result.message;
+
+                // Smooth scroll to result
+                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (err) {
+                alert('Prediction Error: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                document.getElementById('submit-btn').disabled = false;
+            }
+        });
+
+        function fillSample(type) {
+            const data = {
+                good: { co: 2, ozone: 20, no2: 5, pm25: 15 },
+                moderate: { co: 5, ozone: 60, no2: 15, pm25: 55 },
+                unhealthy: { co: 15, ozone: 120, no2: 50, pm25: 160 }
+            }[type];
+            
+            document.getElementById('co_aqi').value = data.co;
+            document.getElementById('ozone_aqi').value = data.ozone;
+            document.getElementById('no2_aqi').value = data.no2;
+            document.getElementById('pm25_aqi').value = data.pm25;
+        }
+    </script>
+</body>
+</html>
